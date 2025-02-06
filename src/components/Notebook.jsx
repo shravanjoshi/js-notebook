@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect,useRef } from "react";
 import { Controlled as CodeMirror } from "react-codemirror2";
 import Navbar from "./Navbar";
 // import ReactMarkdownComponent from "./ReactMarkdownComponent";
@@ -41,6 +41,17 @@ const Notebook = () => {
 
   const [loading, setLoading] = useState(false);
 
+  const iframeRef = useRef(null);
+
+  useEffect(() => {
+    if (!iframeRef.current) {
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none"; // Hide the iframe
+      document.body.appendChild(iframe);
+      iframeRef.current = iframe;
+    }
+  }, []);
+
   const addCell = (index) => {
     const newCells = [...cells];
     newCells.splice(index + 1, 0, {
@@ -73,7 +84,11 @@ const Notebook = () => {
     ]);
   };
 
+  const executionContext = {};
+
   const runCode = (index) => {
+    console.log(executionContext);
+    
     const newCells = [...cells];
     newCells[index].output = [];
     newCells[index].runCount += 1;
@@ -82,12 +97,15 @@ const Notebook = () => {
 
     if (newCells[index].mode === "javascript") {
       try {
-        const show = (value) => {
+
+        const sandboxWindow = iframeRef.current.contentWindow;
+
+        sandboxWindow.show = (value) => {
           newCells[index].output.push(String(value));
           setCells([...newCells]);
         };
-        const func = new Function("show", newCells[index].code);
-        func(show);
+
+        sandboxWindow.eval(newCells[index].code);  
 
         const endTime = performance.now();
         newCells[index].runTime = Math.round(endTime - startTime);
