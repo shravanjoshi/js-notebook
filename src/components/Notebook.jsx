@@ -1,4 +1,4 @@
-import React, { useState, useEffect,useRef } from "react";
+import React, { useState, useEffect,useRef,useCallback } from "react";
 import { Controlled as CodeMirror } from "react-codemirror2";
 import Navbar from "./Navbar";
 // import ReactMarkdownComponent from "./ReactMarkdownComponent";
@@ -84,44 +84,44 @@ const Notebook = () => {
     ]);
   };
 
-  const executionContext = {};
-
-  const runCode = (index) => {
-    console.log(executionContext);
-    
-    const newCells = [...cells];
-    newCells[index].output = [];
-    newCells[index].runCount += 1;
-
-    const startTime = performance.now();
-
-    if (newCells[index].mode === "javascript") {
-      try {
-
-        const sandboxWindow = iframeRef.current.contentWindow;
-
-        sandboxWindow.show = (value) => {
-          newCells[index].output.push(String(value));
+  const runCode = useCallback(
+    (index) => {
+      
+      const newCells = [...cells];
+      newCells[index].output = [];
+      newCells[index].runCount += 1;
+  
+      const startTime = performance.now();
+  
+      if (newCells[index].mode === "javascript") {
+        try {
+          const sandboxWindow = iframeRef.current.contentWindow;
+  
+          sandboxWindow.show = (value) => {
+            newCells[index].output.push(String(value));
+            setCells([...newCells]);
+          };
+  
+          sandboxWindow.eval(newCells[index].code);  
+  
+          const endTime = performance.now();
+          newCells[index].runTime = Math.round(endTime - startTime);
+  
           setCells([...newCells]);
-        };
-
-        sandboxWindow.eval(newCells[index].code);  
-
-        const endTime = performance.now();
-        newCells[index].runTime = Math.round(endTime - startTime);
-
-        setCells([...newCells]);
-      } catch (error) {
-        newCells[index].output.push(`Error: ${error.message}`);
+        } catch (error) {
+          newCells[index].output.push(`Error: ${error.message}`);
+          setCells([...newCells]);
+        }
+      } else {
+        newCells[index].show = true;
+        // const html = marked(newCells[index].code);
+        // newCells[index].code = html;
         setCells([...newCells]);
       }
-    } else {
-      newCells[index].show = true;
-      // const html = marked(newCells[index].code);
-      // newCells[index].code = html;
-      setCells([...newCells]);
-    }
-  };
+    },
+    [cells],
+  )
+  
 
   const shiftDown = (index) => {
     if (index === cells.length - 1) return;
