@@ -1,7 +1,6 @@
-import React, { useState, useEffect,useRef,useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Controlled as CodeMirror } from "react-codemirror2";
 import Navbar from "./Navbar";
-// import ReactMarkdownComponent from "./ReactMarkdownComponent";
 import { NavLink } from "react-router-dom";
 import "codemirror/lib/codemirror.css";
 import "codemirror/mode/javascript/javascript";
@@ -17,7 +16,8 @@ import {
   faPlus,
   faArrowUp,
 } from "@fortawesome/free-solid-svg-icons";
-import HtmlOutput from "./HtmlOutput";
+
+// import io from "socket.io-client";
 
 const Notebook = () => {
   const [cells, setCells] = useState([
@@ -39,7 +39,78 @@ const Notebook = () => {
     },
   ]);
 
+  // const { id } = useParams();
+  // const navigate = useNavigate();
+
   const [loading, setLoading] = useState(false);
+  // const [socket, setSocket] = useState(null);
+  // const [notebookId, setNotebookId] = useState(id);
+
+  // useEffect(() => {
+  //   const createNewNotebook = async () => {
+  //     if (!id) {
+  //       try {
+  //         // const response = await axios.post('/api/notebooks');
+  //         const response = await fetch("http://localhost:5000/api/notebooks", {
+  //           method: "POST",
+  //           headers: {
+  //             "Content-Type": "application/json",
+  //           },
+  //         })
+  //         const data = await response.json();
+  //         console.log(data);
+  //         const { notebookId } = data;
+  //         navigate(`/notebooks/${notebookId}`);
+  //       } catch (error) {
+  //         console.error('Failed to create notebook:', error);
+  //       }
+  //     }
+  //   };
+
+  //   createNewNotebook();
+  // }, [id, navigate]);
+
+
+  // useEffect(() => {
+  //   // Connect to Socket.io server
+    
+  //   const newSocket = io("http://localhost:5000",{
+  //     transports: ['websocket'],
+  //     cors: {
+  //       origin: "http://localhost:3000"
+  //     }
+  //   });
+  //   setSocket(newSocket);
+
+  //   // Join specific notebook room
+  //   newSocket.emit("join-notebook", notebookId);
+
+  //   // Listen for notebook state
+  //   newSocket.on("notebook-state", (state) => {
+  //     setCells(state.cells);
+  //   });
+
+  //   // Handle remote cell updates
+  //   newSocket.on("cell-updated", ({ cellIndex, newContent }) => {
+  //     const updatedCells = [...cells];
+  //     updatedCells[cellIndex] = newContent;
+  //     setCells(updatedCells);
+  //   });
+
+  //   // Handle remote cell additions
+  //   newSocket.on("cell-added", (newCell) => {
+  //     setCells((prevCells) => [...prevCells, newCell]);
+  //   });
+
+  //   // Handle remote cell deletions
+  //   newSocket.on("cell-deleted", (cellIndex) => {
+  //     setCells((prevCells) =>
+  //       prevCells.filter((_, index) => index !== cellIndex)
+  //     );
+  //   });
+
+  //   return () => newSocket.close();
+  // }, []);
 
   const iframeRef = useRef(null);
 
@@ -86,27 +157,26 @@ const Notebook = () => {
 
   const runCode = useCallback(
     (index) => {
-      
       const newCells = [...cells];
       newCells[index].output = [];
       newCells[index].runCount += 1;
-  
+
       const startTime = performance.now();
-  
+
       if (newCells[index].mode === "javascript") {
         try {
           const sandboxWindow = iframeRef.current.contentWindow;
-  
+
           sandboxWindow.show = (value) => {
             newCells[index].output.push(String(value));
             setCells([...newCells]);
           };
-  
-          sandboxWindow.eval(newCells[index].code);  
-  
+
+          sandboxWindow.eval(newCells[index].code);
+
           const endTime = performance.now();
           newCells[index].runTime = Math.round(endTime - startTime);
-  
+
           setCells([...newCells]);
         } catch (error) {
           newCells[index].output.push(`Error: ${error.message}`);
@@ -114,14 +184,11 @@ const Notebook = () => {
         }
       } else {
         newCells[index].show = true;
-        // const html = marked(newCells[index].code);
-        // newCells[index].code = html;
         setCells([...newCells]);
       }
     },
-    [cells],
-  )
-  
+    [cells]
+  );
 
   const shiftDown = (index) => {
     if (index === cells.length - 1) return;
@@ -347,9 +414,10 @@ const Notebook = () => {
           Welcome to ScriptStation
         </h1>
         <div className="absolute top-15 right-10 flex z-10 items-center space-x-1">
-          {loading && <div className="w-4 h-4 border-4 border-gray-300 border-t-gray-500 rounded-full animate-spin"></div>
-          }
-          <button 
+          {loading && (
+            <div className="w-4 h-4 border-4 border-gray-300 border-t-gray-500 rounded-full animate-spin"></div>
+          )}
+          <button
             onClick={runAll}
             className="p-2 text-white rounded-full  cursor-pointer"
           >
@@ -367,122 +435,134 @@ const Notebook = () => {
           >
             <FontAwesomeIcon icon={faPlus} color="lightgrey" size="sm" /> Cell
           </button>
-          <button
-            className="p-2 text-white rounded-full cursor-pointer"
-          >
-            <NavLink to={'#'} target="_blank" ><FontAwesomeIcon icon={faPlus} color="lightgrey" size="sm" /> NB</NavLink>
+          <button className="p-2 text-white rounded-full cursor-pointer">
+            <NavLink to={"#"} target="_blank">
+              <FontAwesomeIcon icon={faPlus} color="lightgrey" size="sm" /> NB
+            </NavLink>
           </button>
         </div>
 
         <div className="container mt-20">
-        {cells.map((cell, index) =>
-          cell.show ? (
-            <HtmlOutput
-              code={cell.code}
-              setShowFalse={() => {
-                const newCells = [...cells];
-                newCells[index].show = false;
-                setCells(newCells);
-              }}
-            />
-          ) : (
-            <div key={index} className="relative mb-6 shadow-lg p-4">
-              <div className="absolute top-[-20px] right-4 flex z-10">
-                <select
-                  className="p-2 text-gray-300 text-sm rounded-full cursor-pointer"
-                  value={cell.mode}
-                  onChange={(e) => {
+          {cells.map((cell, index) =>
+            cell.show ? (
+              <>
+                <div
+                  id="output"
+                  className="bg-[#11191f] text-white relative mb-6 p-4"
+                  dangerouslySetInnerHTML={{ __html: cell.code }}
+                  onDoubleClick={() => {
                     const newCells = [...cells];
-                    newCells[index].mode = e.target.value;
+                    newCells[index].show = false;
                     setCells(newCells);
                   }}
-                  >
-                  <option value="javascript">Code</option>
-                  <option value="htmlmixed">Doc</option>
-                </select>
-                <button
-                  onClick={() => runCode(index)}
-                  className="p-2 text-white rounded-full  cursor-pointer"
-                  >
-                  <FontAwesomeIcon icon={faPlay} color="lightgrey" size="sm" />
-                </button>
-                <button
-                  onClick={() => shiftDown(index)}
-                  className="p-2 text-white rounded-full cursor-pointer"
-                  >
-                  <FontAwesomeIcon
-                    icon={faArrowDown}
-                    color="lightgrey"
-                    size="sm"
-                    />
-                </button>
-                <button
-                  onClick={() => shiftUp(index)}
-                  className="p-2 text-white rounded-full cursor-pointer"
-                >
-                  <FontAwesomeIcon
-                    icon={faArrowUp}
-                    color="lightgrey"
-                    size="sm"
-                  />
-                </button>
-                <button
-                  onClick={() => removeCell(index)}
-                  className="p-2 text-white rounded-full cursor-pointer"
-                >
-                  <FontAwesomeIcon icon={faTrash} color="lightgrey" size="sm" />
-                </button>
-                <button
-                  onClick={() => addCell(index)}
-                  className="p-2 text-white rounded-full cursor-pointer"
-                  >
-                  <FontAwesomeIcon icon={faPlus} color="lightgrey" size="sm" />
-                </button>
-              </div>
-              <CodeMirror
-                value={cell.code}
-                options={{
-                  mode: cell.mode,
-                  theme: "abbott",
-                  lineNumbers: true,
-                  keyMap: "sublime",
-                  lineWrapping: true,
-                  extraKeys: {
-                    "Ctrl-/": (cm) => cm.execCommand("toggleComment"),
-                  },
-                  viewportMargin: Infinity,
-                }}
-                className="text-[0.95rem]"
-                onBeforeChange={(editor, data, value) => {
-                  const newCells = [...cells];
-                  newCells[index].code = value;
-                  setCells(newCells);
-
-                  // setTimeout(() => {
-                  //   editor.setSize(null, "auto");
-                  // }, 0);
-                }}
-                editorDidMount={(editor) => {
-                  editor.setSize(null, "auto");
-                }}
                 />
-              <pre className="mt-2 p-2 bg-[#11191f] text-[#bbc6ce] text-[0.8rem] flex space-x-2">
-                <div className="counter">
-                  <div>
-                    {cell.runCount > 0 && `[${cell.runCount}]`}
-                  </div>
-                  <div>
-                    {`${cell.runTime}ms`}
-                  </div>
+              </>
+            ) : (
+              <div key={index} className="relative mb-6 shadow-lg p-4">
+                <div className="absolute top-[-20px] right-4 flex z-10">
+                  <select
+                    className="p-2 text-gray-300 text-sm rounded-full cursor-pointer"
+                    value={cell.mode}
+                    onChange={(e) => {
+                      const newCells = [...cells];
+                      newCells[index].mode = e.target.value;
+                      setCells(newCells);
+                    }}
+                  >
+                    <option value="javascript">Code</option>
+                    <option value="htmlmixed">Doc</option>
+                  </select>
+                  <button
+                    onClick={() => runCode(index)}
+                    className="p-2 text-white rounded-full  cursor-pointer"
+                  >
+                    <FontAwesomeIcon
+                      icon={faPlay}
+                      color="lightgrey"
+                      size="sm"
+                    />
+                  </button>
+                  <button
+                    onClick={() => shiftDown(index)}
+                    className="p-2 text-white rounded-full cursor-pointer"
+                  >
+                    <FontAwesomeIcon
+                      icon={faArrowDown}
+                      color="lightgrey"
+                      size="sm"
+                    />
+                  </button>
+                  <button
+                    onClick={() => shiftUp(index)}
+                    className="p-2 text-white rounded-full cursor-pointer"
+                  >
+                    <FontAwesomeIcon
+                      icon={faArrowUp}
+                      color="lightgrey"
+                      size="sm"
+                    />
+                  </button>
+                  <button
+                    onClick={() => removeCell(index)}
+                    className="p-2 text-white rounded-full cursor-pointer"
+                  >
+                    <FontAwesomeIcon
+                      icon={faTrash}
+                      color="lightgrey"
+                      size="sm"
+                    />
+                  </button>
+                  <button
+                    onClick={() => addCell(index)}
+                    className="p-2 text-white rounded-full cursor-pointer"
+                  >
+                    <FontAwesomeIcon
+                      icon={faPlus}
+                      color="lightgrey"
+                      size="sm"
+                    />
+                  </button>
                 </div>
-                <div className="output">
-                  {cell.mode === "javascript" &&
-                    cell.output.map((line, i) => <div key={i}>{line}</div>)}
-                </div>
-              </pre>
-            </div>
-          )
-        )}
+                <CodeMirror
+                  value={cell.code}
+                  options={{
+                    mode: cell.mode,
+                    theme: "abbott",
+                    lineNumbers: true,
+                    keyMap: "sublime",
+                    lineWrapping: true,
+                    extraKeys: {
+                      "Ctrl-/": (cm) => cm.execCommand("toggleComment"),
+                    },
+                    viewportMargin: Infinity,
+                  }}
+                  className="text-[0.95rem]"
+                  onBeforeChange={(editor, data, value) => {
+                    const newCells = [...cells];
+                    newCells[index].code = value;
+                    setCells(newCells);
+
+                    // setTimeout(() => {
+                    //   editor.setSize(null, "auto");
+                    // }, 0);
+                  }}
+                  editorDidMount={(editor) => {
+                    editor.setSize(null, "auto");
+                  }}
+                />
+                <pre className="mt-2 p-2 bg-[#11191f] text-[#bbc6ce] text-[0.8rem] flex space-x-2">
+                  <div className="counter">
+                    <div>{cell.runCount > 0 && `[${cell.runCount}]`}</div>
+                    <div>{`${cell.runTime}ms`}</div>
+                  </div>
+                  <div className="output">
+                    {cell.mode === "javascript" &&
+                      cell.output.map((line, i) => <div key={i}>{line}</div>)}
+                  </div>
+                </pre>
+              </div>
+            )
+          )}
         </div>
       </div>
     </div>
