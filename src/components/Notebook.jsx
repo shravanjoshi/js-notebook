@@ -17,8 +17,6 @@ import {
   faArrowUp,
 } from "@fortawesome/free-solid-svg-icons";
 
-// import io from "socket.io-client";
-
 const Notebook = () => {
   const [cells, setCells] = useState([
     {
@@ -39,85 +37,14 @@ const Notebook = () => {
     },
   ]);
 
-  // const { id } = useParams();
-  // const navigate = useNavigate();
-
   const [loading, setLoading] = useState(false);
-  // const [socket, setSocket] = useState(null);
-  // const [notebookId, setNotebookId] = useState(id);
-
-  // useEffect(() => {
-  //   const createNewNotebook = async () => {
-  //     if (!id) {
-  //       try {
-  //         // const response = await axios.post('/api/notebooks');
-  //         const response = await fetch("http://localhost:5000/api/notebooks", {
-  //           method: "POST",
-  //           headers: {
-  //             "Content-Type": "application/json",
-  //           },
-  //         })
-  //         const data = await response.json();
-  //         console.log(data);
-  //         const { notebookId } = data;
-  //         navigate(`/notebooks/${notebookId}`);
-  //       } catch (error) {
-  //         console.error('Failed to create notebook:', error);
-  //       }
-  //     }
-  //   };
-
-  //   createNewNotebook();
-  // }, [id, navigate]);
-
-
-  // useEffect(() => {
-  //   // Connect to Socket.io server
-    
-  //   const newSocket = io("http://localhost:5000",{
-  //     transports: ['websocket'],
-  //     cors: {
-  //       origin: "http://localhost:3000"
-  //     }
-  //   });
-  //   setSocket(newSocket);
-
-  //   // Join specific notebook room
-  //   newSocket.emit("join-notebook", notebookId);
-
-  //   // Listen for notebook state
-  //   newSocket.on("notebook-state", (state) => {
-  //     setCells(state.cells);
-  //   });
-
-  //   // Handle remote cell updates
-  //   newSocket.on("cell-updated", ({ cellIndex, newContent }) => {
-  //     const updatedCells = [...cells];
-  //     updatedCells[cellIndex] = newContent;
-  //     setCells(updatedCells);
-  //   });
-
-  //   // Handle remote cell additions
-  //   newSocket.on("cell-added", (newCell) => {
-  //     setCells((prevCells) => [...prevCells, newCell]);
-  //   });
-
-  //   // Handle remote cell deletions
-  //   newSocket.on("cell-deleted", (cellIndex) => {
-  //     setCells((prevCells) =>
-  //       prevCells.filter((_, index) => index !== cellIndex)
-  //     );
-  //   });
-
-  //   return () => newSocket.close();
-  // }, []);
 
   const iframeRef = useRef(null);
 
   useEffect(() => {
     if (!iframeRef.current) {
       const iframe = document.createElement("iframe");
-      iframe.style.display = "none"; // Hide the iframe
+      iframe.style.display = "none"; 
       document.body.appendChild(iframe);
       iframeRef.current = iframe;
     }
@@ -211,7 +138,6 @@ const Notebook = () => {
   };
 
   const downloadAsHTML = () => {
-    // Generate HTML content for the notebook cells
     const htmlContent = cells
       .map((cell) => {
         if (cell.show) {
@@ -227,7 +153,6 @@ const Notebook = () => {
       })
       .join("");
 
-    // HTML boilerplate including styles and scripts
     const fullHtml = `
       <!DOCTYPE html>
       <html lang="en">
@@ -281,12 +206,12 @@ const Notebook = () => {
       </html>
     `;
 
-    // Create a Blob from the HTML string
+    
     const blob = new Blob([fullHtml], { type: "text/html" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "notebook.html"; // Name of the file
-    link.click(); // Trigger the download
+    link.download = "notebook.html"; 
+    link.click(); 
   };
 
   const downloadAsHTMLOnlyOutput = () => {
@@ -305,7 +230,7 @@ const Notebook = () => {
       })
       .join("");
 
-    // HTML boilerplate including styles and scripts
+ 
     const fullHtml = `
       <!DOCTYPE html>
       <html lang="en">
@@ -328,12 +253,12 @@ const Notebook = () => {
       </html>
     `;
 
-    // Create a Blob from the HTML string
+
     const blob = new Blob([fullHtml], { type: "text/html" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "notebook.html"; // Name of the file
-    link.click(); // Trigger the download
+    link.download = "notebook.html";
+    link.click();
   };
 
   const downloadAsJS = () => {
@@ -349,8 +274,8 @@ const Notebook = () => {
     const blob = new Blob([jsContent], { type: "text/javascript" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "notebook.js"; // Name of the file
-    link.click(); // Trigger the download
+    link.download = "notebook.js"; 
+    link.click(); 
   };
 
   const runAll = () => {
