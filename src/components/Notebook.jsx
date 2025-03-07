@@ -1,26 +1,31 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Controlled as CodeMirror } from "react-codemirror2";
 import Navbar from "./Navbar";
-import { NavLink } from "react-router-dom";
-import "codemirror/lib/codemirror.css";
-import "codemirror/mode/javascript/javascript";
-import "codemirror/mode/htmlmixed/htmlmixed";
-import "codemirror/addon/comment/comment";
-import "codemirror/keymap/sublime";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import "codemirror/theme/abbott.css";
-import {
-  faPlay,
-  faArrowDown,
-  faTrash,
-  faPlus,
-  faArrowUp,
-} from "@fortawesome/free-solid-svg-icons";
+import CellButtons from "./CellButtons";
+import TopButtons from "./TopButtons";
+import Editor from "./Editor";
+import { toast } from 'react-hot-toast';
 
 const Notebook = () => {
   const [cells, setCells] = useState([
     {
-      code: "This is a doc cell, you can write html or plain text here. Double click to edit. Below is a code cell.",
+      code: `<div style="background-color: #11191f; padding: 10px 15px; color: #f8fafc; font-family: Arial, sans-serif;">
+      <h2 style="font-size: 1.8rem; color: #facc15; font-weight: bold; text-align: center; margin-bottom: 10px;">
+    Welcome to ScriptStation
+  </h2>
+      <p style="font-size: 1rem; line-height: 1.5;">
+        This notebook allows you to write and execute JavaScript code interactively. You can also add documentation alongside your code.
+      </p>
+      <ul style="margin-top: 10px; padding-left: 20px;">
+        <li style="margin: 5px 0;">&#8226; &#160; Create new code or documentation cells.</li>
+        <li style="margin: 5px 0;">&#8226; &#160; Run JavaScript code directly within the notebook.</li>
+        <li style="margin: 5px 0;">&#8226; &#160; Save and download your work as HTML or JavaScript files.</li>
+        <li style="margin: 5px 0;">&#8226; &#160; Style your HTML cells with custom CSS.</li>
+      </ul>
+      <p style="font-size: 1rem; line-height: 1.5; margin-top: 20px;">
+        Double click on the cell to edit the content.
+      </p>
+    </div>
+`,
       output: [],
       runCount: 0,
       runTime: 0,
@@ -28,7 +33,32 @@ const Notebook = () => {
       show: true,
     },
     {
-      code: "//Write your code here and test",
+      code: `show("Hello !");
+let sum = 0;
+for (let i = 1; i <= 10; i++) {
+  sum += i;
+}
+show("Sum of first 10 numbers: " + sum);`,
+      output: [],
+      runCount: 0,
+      runTime: 0,
+      mode: "javascript",
+      show: false,
+    },
+    {
+      code: `function square(n) {
+  return n * n;
+} 
+//Run it once!, to call the function in other cells.`,
+      output: [],
+      runCount: 0,
+      runTime: 0,
+      mode: "javascript",
+      show: false,
+    },
+    {
+      code: `console.log('Hello !');
+show("Square of 5: " + square(5));`,
       output: [],
       runCount: 0,
       runTime: 0,
@@ -37,23 +67,78 @@ const Notebook = () => {
     },
   ]);
 
-  const [loading, setLoading] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const iframeRef = useRef(null);
+  const savedCellsStringRef = useRef("");
 
+  // Load saved cells and set up initial state
   useEffect(() => {
+    const storedNotebook = localStorage.getItem("notebook");
+    if (storedNotebook) {
+      const parsedCells = JSON.parse(storedNotebook);
+      setCells(parsedCells);
+      // Store the stringified version for comparison
+      savedCellsStringRef.current = storedNotebook;
+    } else {
+      // If no stored notebook, set the current cells as the saved state
+      savedCellsStringRef.current = JSON.stringify(cells);
+    }
+    
     if (!iframeRef.current) {
       const iframe = document.createElement("iframe");
-      iframe.style.display = "none"; 
+      iframe.style.display = "none";
       document.body.appendChild(iframe);
       iframeRef.current = iframe;
     }
+    runAll();
   }, []);
+
+  // Set up beforeunload event to warn about unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        // Standard way to show a confirmation dialog before page unload
+        e.preventDefault();
+        e.returnValue = "Unsaved changes will be erased. Are you sure you want to reload?";
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+
+  // Check for unsaved changes whenever cells change
+  useEffect(() => {
+    if (!savedCellsStringRef.current) return;
+    
+    // Create a clean version of cells for comparison
+    // This avoids issues with output arrays and runtime values changing
+    const cleanCells = cells.map(cell => ({
+      code: cell.code,
+      mode: cell.mode,
+    }));
+    
+    const currentCellsJSON = JSON.stringify(cleanCells);
+    
+    // Compare with saved state - checking only the properties we care about
+    const savedCells = JSON.parse(savedCellsStringRef.current);
+    const cleanSavedCells = savedCells.map(cell => ({
+      code: cell.code,
+      mode: cell.mode,
+    }));
+    const savedCellsJSON = JSON.stringify(cleanSavedCells);
+    
+    setHasUnsavedChanges(currentCellsJSON !== savedCellsJSON);
+  }, [cells]);
 
   const addCell = (index) => {
     const newCells = [...cells];
     newCells.splice(index + 1, 0, {
-      code: "//Write your code here and test",
+      code: "",
       output: [],
       runCount: 0,
       runTime: 0,
@@ -69,17 +154,19 @@ const Notebook = () => {
   };
 
   const clearNotebook = () => {
+    const newCells = [{
+      code: "//Write your code here and test",
+      output: [],
+      runCount: 0,
+      runTime: 0,
+      mode: "javascript",
+      show: false,
+    }];
+    
     localStorage.removeItem("notebook");
-    setCells([
-      {
-        code: "//Write your code here and test",
-        output: [],
-        runCount: 0,
-        runTime: 0,
-        mode: "javascript",
-        show: false,
-      },
-    ]);
+    savedCellsStringRef.current = JSON.stringify(newCells);
+    setCells(newCells);
+    setHasUnsavedChanges(false);
   };
 
   const runCode = useCallback(
@@ -206,12 +293,11 @@ const Notebook = () => {
       </html>
     `;
 
-    
     const blob = new Blob([fullHtml], { type: "text/html" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "notebook.html"; 
-    link.click(); 
+    link.download = "notebook.html";
+    link.click();
   };
 
   const downloadAsHTMLOnlyOutput = () => {
@@ -230,7 +316,6 @@ const Notebook = () => {
       })
       .join("");
 
- 
     const fullHtml = `
       <!DOCTYPE html>
       <html lang="en">
@@ -253,7 +338,6 @@ const Notebook = () => {
       </html>
     `;
 
-
     const blob = new Blob([fullHtml], { type: "text/html" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -262,20 +346,20 @@ const Notebook = () => {
   };
 
   const downloadAsJS = () => {
-    let jsContent = `/*Generated by JSNB: ScriptStation*/ \n\n`;
+    let jsContent = `/*Generated by JSNB: ScriptStation*/`;
     jsContent += cells
       .map((cell) => {
         if (cell.mode === "javascript") {
           return cell.code;
         }
       })
-      .join("\n/*---------*/\n\n");
+      .join("\n\n/*---------*/\n\n");
 
     const blob = new Blob([jsContent], { type: "text/javascript" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "notebook.js"; 
-    link.click(); 
+    link.download = "notebook.js";
+    link.click();
   };
 
   const runAll = () => {
@@ -298,9 +382,10 @@ const Notebook = () => {
   const insertDocCell = () => {
     const newCells = [...cells];
     newCells.push({
-      code: "//Write your code here and test",
+      code: "This is a doc cell, you can write html or plain text here",
       output: [],
       runCount: 0,
+      runTime: 0,
       mode: "htmlmixed",
       show: false,
     });
@@ -308,17 +393,34 @@ const Notebook = () => {
   };
 
   const saveLocally = () => {
-    setLoading(true);
-    localStorage.setItem("notebook", JSON.stringify(cells));
-    setTimeout(() => {
-      setLoading(false);
-    }, 1500);
+    // Save to localStorage
+    const cellsToSave = JSON.stringify(cells);
+    localStorage.setItem("notebook", cellsToSave);
+    
+    // Update our reference of saved state
+    savedCellsStringRef.current = cellsToSave;
+    
+    // Update UI
+    setHasUnsavedChanges(false);
+
+    toast.success('Notebook saved', {
+      duration: 3000,
+      position: 'bottom-right',
+    });
+
   };
 
   const loadLocal = () => {
     const storedNotebook = localStorage.getItem("notebook");
     if (storedNotebook) {
-      setCells(JSON.parse(storedNotebook));
+      const parsedCells = JSON.parse(storedNotebook);
+      setCells(parsedCells);
+      savedCellsStringRef.current = storedNotebook;
+      setHasUnsavedChanges(false);
+      toast.success('Notebook loaded', {
+        duration: 3000,
+        position: 'bottom-right',
+      });
     }
   };
 
@@ -334,157 +436,50 @@ const Notebook = () => {
         onSaveLocally={saveLocally}
         onLoadLocal={loadLocal}
       />
-      <div className="relative max-w-5xl mx-auto p-6">
-        <h1 className="mb-10 text-2xl text-amber-300 font-bold text-center">
+      <div className="relative max-w-5xl mx-auto p-6 pt-3">
+        {/* <h1 className="mb-10 text-2xl text-amber-300 font-bold text-center">
           Welcome to ScriptStation
-        </h1>
-        <div className="absolute top-15 right-10 flex z-10 items-center space-x-1">
-          {loading && (
-            <div className="w-4 h-4 border-4 border-gray-300 border-t-gray-500 rounded-full animate-spin"></div>
-          )}
-          <button
-            onClick={runAll}
-            className="p-2 text-white rounded-full  cursor-pointer"
-          >
-            <FontAwesomeIcon icon={faPlay} color="lightgrey" size="sm" />
-          </button>
-          <button
-            onClick={clearNotebook}
-            className="p-2 text-white rounded-full cursor-pointer"
-          >
-            <FontAwesomeIcon icon={faTrash} color="lightgrey" size="sm" />
-          </button>
-          <button
-            className="p-2 text-white rounded-full cursor-pointer"
-            onClick={insertCodeCell}
-          >
-            <FontAwesomeIcon icon={faPlus} color="lightgrey" size="sm" /> Cell
-          </button>
-          <button className="p-2 text-white rounded-full cursor-pointer">
-            <NavLink to={"#"} target="_blank">
-              <FontAwesomeIcon icon={faPlus} color="lightgrey" size="sm" /> NB
-            </NavLink>
-          </button>
-        </div>
+        </h1> */}
+        <TopButtons
+          clearNotebook={clearNotebook}
+          insertCodeCell={insertCodeCell}
+          runAll={runAll}
+          saveLocally={saveLocally}
+        />
 
-        <div className="container mt-20">
+        <div className="container mt-15">
           {cells.map((cell, index) =>
             cell.show ? (
-              <>
-                <div
-                  id="output"
-                  className="bg-[#11191f] text-white relative mb-6 p-4"
-                  dangerouslySetInnerHTML={{ __html: cell.code }}
-                  onDoubleClick={() => {
-                    const newCells = [...cells];
-                    newCells[index].show = false;
-                    setCells(newCells);
-                  }}
-                />
-              </>
+              <div
+                key={index}
+                id="output"
+                className="bg-[#11191f] text-white relative mb-6 p-4"
+                dangerouslySetInnerHTML={{ __html: cell.code }}
+                onDoubleClick={() => {
+                  const newCells = [...cells];
+                  newCells[index].show = false;
+                  setCells(newCells);
+                }}
+              />
             ) : (
-              <div key={index} className="relative mb-6 shadow-lg p-4">
-                <div className="absolute top-[-20px] right-4 flex z-10">
-                  <select
-                    className="p-2 text-gray-300 text-sm rounded-full cursor-pointer"
-                    value={cell.mode}
-                    onChange={(e) => {
-                      const newCells = [...cells];
-                      newCells[index].mode = e.target.value;
-                      setCells(newCells);
-                    }}
-                  >
-                    <option value="javascript">Code</option>
-                    <option value="htmlmixed">Doc</option>
-                  </select>
-                  <button
-                    onClick={() => runCode(index)}
-                    className="p-2 text-white rounded-full  cursor-pointer"
-                  >
-                    <FontAwesomeIcon
-                      icon={faPlay}
-                      color="lightgrey"
-                      size="sm"
-                    />
-                  </button>
-                  <button
-                    onClick={() => shiftDown(index)}
-                    className="p-2 text-white rounded-full cursor-pointer"
-                  >
-                    <FontAwesomeIcon
-                      icon={faArrowDown}
-                      color="lightgrey"
-                      size="sm"
-                    />
-                  </button>
-                  <button
-                    onClick={() => shiftUp(index)}
-                    className="p-2 text-white rounded-full cursor-pointer"
-                  >
-                    <FontAwesomeIcon
-                      icon={faArrowUp}
-                      color="lightgrey"
-                      size="sm"
-                    />
-                  </button>
-                  <button
-                    onClick={() => removeCell(index)}
-                    className="p-2 text-white rounded-full cursor-pointer"
-                  >
-                    <FontAwesomeIcon
-                      icon={faTrash}
-                      color="lightgrey"
-                      size="sm"
-                    />
-                  </button>
-                  <button
-                    onClick={() => addCell(index)}
-                    className="p-2 text-white rounded-full cursor-pointer"
-                  >
-                    <FontAwesomeIcon
-                      icon={faPlus}
-                      color="lightgrey"
-                      size="sm"
-                    />
-                  </button>
-                </div>
-                <CodeMirror
-                  value={cell.code}
-                  options={{
-                    mode: cell.mode,
-                    theme: "abbott",
-                    lineNumbers: true,
-                    keyMap: "sublime",
-                    lineWrapping: true,
-                    extraKeys: {
-                      "Ctrl-/": (cm) => cm.execCommand("toggleComment"),
-                    },
-                    viewportMargin: Infinity,
-                  }}
-                  className="text-[0.95rem]"
-                  onBeforeChange={(editor, data, value) => {
-                    const newCells = [...cells];
-                    newCells[index].code = value;
-                    setCells(newCells);
-
-                    // setTimeout(() => {
-                    //   editor.setSize(null, "auto");
-                    // }, 0);
-                  }}
-                  editorDidMount={(editor) => {
-                    editor.setSize(null, "auto");
-                  }}
+              <div key={index} className="relative mb-8 shadow-lg p-4">
+                <CellButtons
+                  cell={cell}
+                  cells={cells}
+                  addCell={addCell}
+                  setCells={setCells}
+                  index={index}
+                  runCode={runCode}
+                  shiftDown={shiftDown}
+                  shiftUp={shiftUp}
+                  removeCell={removeCell}
                 />
-                <pre className="mt-2 p-2 bg-[#11191f] text-[#bbc6ce] text-[0.8rem] flex space-x-2">
-                  <div className="counter">
-                    <div>{cell.runCount > 0 && `[${cell.runCount}]`}</div>
-                    <div>{`${cell.runTime}ms`}</div>
-                  </div>
-                  <div className="output">
-                    {cell.mode === "javascript" &&
-                      cell.output.map((line, i) => <div key={i}>{line}</div>)}
-                  </div>
-                </pre>
+                <Editor
+                  cell={cell}
+                  cells={cells}
+                  index={index}
+                  setCells={setCells}
+                />
               </div>
             )
           )}

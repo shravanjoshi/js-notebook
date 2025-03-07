@@ -8,7 +8,6 @@ const router = createBrowserRouter(
         <Route path='/' >
             <Route path='' element={<App/>} />
             <Route path='#' element={<App/>}/>
-            <Route path='/notebooks/:id' element={<App/>}/>
         </Route>
     )
 )
