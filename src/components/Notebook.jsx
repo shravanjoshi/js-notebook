@@ -72,7 +72,7 @@ show("Square of 5: " + square(5));`,
   const iframeRef = useRef(null);
   const savedCellsStringRef = useRef("");
 
-  // Load saved cells and set up initial state
+
   useEffect(() => {
     const storedNotebook = localStorage.getItem("notebook");
     if (storedNotebook) {
@@ -94,7 +94,6 @@ show("Square of 5: " + square(5));`,
     runAll();
   }, []);
 
-  // Set up beforeunload event to warn about unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       if (hasUnsavedChanges) {
@@ -111,12 +110,10 @@ show("Square of 5: " + square(5));`,
     };
   }, [hasUnsavedChanges]);
 
-  // Check for unsaved changes whenever cells change
+
   useEffect(() => {
     if (!savedCellsStringRef.current) return;
     
-    // Create a clean version of cells for comparison
-    // This avoids issues with output arrays and runtime values changing
     const cleanCells = cells.map(cell => ({
       code: cell.code,
       mode: cell.mode,
@@ -124,7 +121,7 @@ show("Square of 5: " + square(5));`,
     
     const currentCellsJSON = JSON.stringify(cleanCells);
     
-    // Compare with saved state - checking only the properties we care about
+
     const savedCells = JSON.parse(savedCellsStringRef.current);
     const cleanSavedCells = savedCells.map(cell => ({
       code: cell.code,
@@ -393,14 +390,13 @@ show("Square of 5: " + square(5));`,
   };
 
   const saveLocally = () => {
-    // Save to localStorage
+
     const cellsToSave = JSON.stringify(cells);
     localStorage.setItem("notebook", cellsToSave);
     
-    // Update our reference of saved state
+
     savedCellsStringRef.current = cellsToSave;
     
-    // Update UI
     setHasUnsavedChanges(false);
 
     toast.success('Notebook saved', {
@@ -437,9 +433,6 @@ show("Square of 5: " + square(5));`,
         onLoadLocal={loadLocal}
       />
       <div className="relative max-w-5xl mx-auto p-6 pt-3">
-        {/* <h1 className="mb-10 text-2xl text-amber-300 font-bold text-center">
-          Welcome to ScriptStation
-        </h1> */}
         <TopButtons
           clearNotebook={clearNotebook}
           insertCodeCell={insertCodeCell}
