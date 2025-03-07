@@ -30,14 +30,6 @@ ScriptStation offers a unique, browser-based interface where developers can:
 - **Modern UI:**  
   - Built with React and styled with Tailwind CSS to deliver a responsive and user-friendly interface.
 
-## Future Enhancements
-
-- **Real-Time Collaboration:**  
-  - Enable multiple users to work concurrently on the same notebook, fostering a collaborative development environment.
-  
-- **Database Integration:**  
-  - Integrate a robust backend database to provide persistent storage for notebooks, enhancing data security and accessibility.
-
 ## Technologies Used
 
 - **React:** For building the dynamic, interactive user interface.
