@@ -9,7 +9,7 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin : 'https://scriptstation.vercel.app/',
+  origin : 'https://scriptstation.vercel.app',
   credentials : true,
 }));
 app.use(express.json());
