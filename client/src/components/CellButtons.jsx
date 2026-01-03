@@ -19,6 +19,7 @@ function CellButtons({ cell, cells, setCells, index, runCode, shiftDown, shiftUp
             newCells[index].mode = e.target.value;
             setCells(newCells);
           }}
+          aria-label="Mode"
         >
           <option className="bg-[#11191f]" value="javascript">Code</option>
           <option className="bg-[#11191f]" value="htmlmixed">Doc</option>
