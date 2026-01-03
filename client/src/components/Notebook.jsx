@@ -18,20 +18,20 @@ const Notebook = () => {
   const [availableNotebooks, setAvailableNotebooks] = useState([]);
   const [cells, setCells] = useState([
     {
-      code: `<div style="background-color: #11191f; padding: 10px 15px; color: #f8fafc; font-family: Arial, sans-serif;">
-      <h2 style="font-size: 1.8rem; color: #facc15; font-weight: bold; text-align: center; margin-bottom: 10px;">
+      code: `<div style="background-color: #11191f; padding: clamp(10px, 3vw, 20px) clamp(15px, 4vw, 30px); color: #f8fafc; font-family: Arial, sans-serif;">
+      <h2 style="font-size: clamp(1.3rem, 4vw, 1.8rem); color: #facc15; font-weight: bold; text-align: center; margin-bottom: clamp(8px, 2vw, 10px);">
     Welcome to ScriptStation
   </h2>
-      <p style="font-size: 1rem; line-height: 1.5;">
+      <p style="font-size: clamp(0.875rem, 2.5vw, 1rem); line-height: 1.6; word-wrap: break-word;">
         This notebook allows you to write and execute JavaScript code interactively. You can also add documentation alongside your code.
       </p>
-      <ul style="margin-top: 10px; padding-left: 20px;">
-        <li style="margin: 5px 0;">&#8226; &#160; Create new code or documentation cells.</li>
-        <li style="margin: 5px 0;">&#8226; &#160; Run JavaScript code directly within the notebook.</li>
-        <li style="margin: 5px 0;">&#8226; &#160; Save and download your work as HTML or JavaScript files.</li>
-        <li style="margin: 5px 0;">&#8226; &#160; Style your HTML cells with custom CSS.</li>
+      <ul style="margin-top: clamp(8px, 2vw, 10px); padding-left: clamp(15px, 4vw, 20px); list-style: none;">
+        <li style="margin: clamp(4px, 1vw, 5px) 0; font-size: clamp(0.875rem, 2.5vw, 1rem);">&#8226; &#160; Create new code or documentation cells.</li>
+        <li style="margin: clamp(4px, 1vw, 5px) 0; font-size: clamp(0.875rem, 2.5vw, 1rem);">&#8226; &#160; Run JavaScript code directly within the notebook.</li>
+        <li style="margin: clamp(4px, 1vw, 5px) 0; font-size: clamp(0.875rem, 2.5vw, 1rem);">&#8226; &#160; Save and download your work as HTML or JavaScript files.</li>
+        <li style="margin: clamp(4px, 1vw, 5px) 0; font-size: clamp(0.875rem, 2.5vw, 1rem);">&#8226; &#160; Style your HTML cells with custom CSS.</li>
       </ul>
-      <p style="font-size: 1rem; line-height: 1.5; margin-top: 20px;">
+      <p style="font-size: clamp(0.875rem, 2.5vw, 1rem); line-height: 1.6; margin-top: clamp(15px, 3vw, 20px); word-wrap: break-word;">
         Double click on the cell to edit the content.
       </p>
     </div>
@@ -535,14 +535,15 @@ show("Square of 5: " + square(5));`,
         onLoad={load}
         title={title}
         onTitleChange={setTitle}
+        clearNotebook={clearNotebook}
       />
       <div className="relative max-w-5xl mx-auto p-6 pt-3">
-        <TopButtons
+        {/* <TopButtons
           clearNotebook={clearNotebook}
           insertCodeCell={insertCodeCell}
           runAll={runAll}
           onSave={save}
-        />
+        /> */}
 
         <div className="container mt-15">
           {cells.map((cell, index) =>
